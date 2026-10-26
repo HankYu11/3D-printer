@@ -511,9 +511,14 @@ def recoil_shelf(p: Params, neck_z: float, shoe_length: float) -> cq.Workplane:
     violent pull and what makes launch angle drift between launches.
 
     Lofted from a full-height root to a thinner, slightly raised lip. The
-    taper keeps the underside self-supporting and angles the bearing face
-    up by `shelf_rise_deg`, so the reaction pushes the hand INTO the grip
-    rather than letting it slide forward off the shelf.
+    taper angles the bearing face up by `shelf_rise_deg`, so the reaction
+    pushes the hand INTO the grip rather than letting it slide forward off
+    the shelf under repeated pulls.
+
+    The taper is NOT doing anything for printability, despite how it
+    looks. Built cheek-down the build direction is lateral, so this
+    shelf's underside is a vertical wall, not an overhang -- it does not
+    appear in the mesh overhang check at any angle. Shape it for the hand.
     """
     x0 = shoe_length / 2 - p.shelf_root_inset
     x1 = shoe_length / 2 + p.shelf_depth

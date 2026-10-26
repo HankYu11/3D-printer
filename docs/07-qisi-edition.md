@@ -90,6 +90,12 @@ support each other against roll — the axis a launch pull actually twists about
 
 ## Support: verified, not asserted
 
+Treated as nice-to-have rather than a gate. It is met anyway, and it cost
+nothing to meet — see `04`, "What the orientation actually constrains": in this
+orientation only the cheek plane and enclosed void roofs are constrained, so
+relaxing the requirement would not have bought any ergonomic freedom back.
+
+
 Measured on the exported mesh in the cheek-down orientation:
 
 | | |

@@ -86,6 +86,30 @@ dropped to 8.6 %, and what is left is not support:
 No true unsupported overhang remains. Verify any revision with
 `scratchpad/overhang.py`-style mesh checks rather than by assertion.
 
+### What the orientation actually constrains
+
+Worth being precise about, because it is easy to over-credit: printing
+cheek-down means the build direction is **lateral**, so anything shaped in the
+fore-aft/vertical plane prints as a vertical wall whatever its angle. Finger
+scallops, the recoil shelf, the butt flare, the palm swell, the rake, the
+texture — none of them is constrained by printability at all. The ergonomics
+are free.
+
+Only two things are actually constrained:
+
+1. **Lateral width variation**, because that is the bed face. The cheeks must
+   stay coplanar — and they want to be flat anyway, for bed adhesion and
+   because they are the branding canvas.
+2. **Enclosed void roofs**, which is why the ballast hexagon is oriented
+   flats-to-cheeks.
+
+So support-free here is a *property* of a geometry chosen for other reasons,
+not a constraint that shaped it. Treat it as a preference rather than a gate:
+if a future feature genuinely needs support, that is a trade worth making —
+with one exception. The ballast bay is a 46 mm **blind** pocket, and support
+inside it cannot be removed. That one stays self-supporting on pain of
+scrapping the part.
+
 ## Support-free by construction
 
 Every feature was designed against the cheek-down build direction:
