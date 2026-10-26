@@ -1,0 +1,118 @@
+{
+  "schema": "vertex-grip/1",
+  "generated_utc": "2026-10-26T12:48:37+00:00",
+  "order_digest": "37892f8494b0",
+  "parameters": {
+    "hand_breadth": 100.0,
+    "rake_deg": 16.0,
+    "player_id": "DRACIEL-X",
+    "texture": "ribs",
+    "handed": "ambi",
+    "material": "PETG",
+    "ballast_nuts": 4,
+    "grip_width": 30.0,
+    "neck_offset_x": -6.0,
+    "shelf_depth": 9.0,
+    "shelf_thick": 7.0,
+    "shelf_rise_deg": 8.0,
+    "shelf_root_inset": 6.0,
+    "index_scallop_r": 12.0,
+    "index_scallop_depth": 2.2,
+    "finger_groove_depth": 1.5,
+    "finger_groove_r": 9.0,
+    "ballast_af": 13.0,
+    "ballast_clear": 0.35,
+    "ballast_depth": 46.0,
+    "ballast_offset_x": -5.0,
+    "cap_screw_offset_x": 11.0,
+    "cap_insert_dia": 4.2,
+    "cap_insert_depth": 6.0,
+    "panel_recess": 0.8,
+    "panel_len": 56.0,
+    "panel_width": 24.0,
+    "text_depth": 0.6,
+    "text_size": 8.0,
+    "text_font": "DejaVu Sans",
+    "knurl_pitch": 4.2,
+    "knurl_depth": 0.75,
+    "knurl_angle_deg": 35.0,
+    "neck_fillet": 6.0,
+    "shell_thick": 1.6,
+    "infill_fraction": 0.15
+  },
+  "derived": {
+    "grip_circumference_mm": 140.83,
+    "grip_depth_mm": 49.0,
+    "grip_length_mm": 98.0,
+    "finger_pitch_mm": 20.5
+  },
+  "geometry": {
+    "solid_volume_mm3": 127113.0,
+    "surface_area_mm2": 21428.0,
+    "bbox_mm": [
+      82.91,
+      30.7,
+      108.94
+    ],
+    "centre_of_mass_mm": [
+      -16.84,
+      0.0,
+      -51.2
+    ],
+    "neck_blend": "lofted collar"
+  },
+  "print_estimate": {
+    "material_volume_mm3": 48209.0,
+    "estimated_mass_g": 61.2,
+    "estimated_hours": 1.22,
+    "effective_density": 0.379,
+    "note": "first-order; the slicer is authoritative"
+  },
+  "balance": {
+    "ballast_nuts": 4,
+    "ballast_mass_g": 22.9,
+    "assembly_mass_g": 159.2,
+    "cog_overhang_above_hand_mm": 36.6,
+    "cog_height_mm": -15.8,
+    "wrist_moment_nmm": 47.4,
+    "inertia_kgm2": 0.002405
+  },
+  "structure": {
+    "neck": {
+      "moment_nmm": 4200.0,
+      "section_modulus_mm3": 7303.842,
+      "stress_mpa": 1.046,
+      "margin_inplane": 44.953,
+      "margin_interlayer": 25.824
+    },
+    "dovetail_wall": {
+      "flank_angle_deg": 22.932,
+      "splay_force_n": 177.273,
+      "moment_nmm": 460.909,
+      "section_modulus_mm3": 48.0,
+      "bending_stress_mpa": 9.602,
+      "interlaminar_shear_mpa": 2.77,
+      "margin_cheek_down": 4.895,
+      "margin_upright": 2.812
+    },
+    "governing_feature": "dovetail_wall"
+  },
+  "interface": {
+    "provenance": "UNVERIFIED-NOMINAL",
+    "rail": {
+      "boss_width_bottom": 24.0,
+      "boss_width_top": 19.6,
+      "boss_height": 5.2,
+      "slide_length": 32.0,
+      "wall": 3.0,
+      "floor": 4.8,
+      "stop_thick": 2.0
+    },
+    "fit_clearance_mm": 0.15,
+    "wedge_taper_deg": 1.2
+  },
+  "warnings": [
+    "Launcher interface geometry is UNVERIFIED placeholder data. Measure a physical launcher, populate interface.RAIL_MEASURED and set RAIL_VERIFIED=True before cutting a saleable part.",
+    "Launcher mass and balance point are estimates; the balance figures below are directional only."
+  ]
+}

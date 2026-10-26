@@ -1,0 +1,7 @@
+# Primary CAD toolchain. cadquery pulls in OCCT (cadquery-ocp), which is a
+# large wheel -- allow a few minutes for a cold install.
+cadquery>=2.8,<3
+
+# analysis.py, validate.py and params.py are deliberately dependency-free
+# pure Python, so the order validator and the configurator's live fit preview
+# can run without OCCT. Only the final geometry cut needs cadquery.
