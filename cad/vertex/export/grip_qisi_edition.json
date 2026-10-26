@@ -1,7 +1,7 @@
 {
   "schema": "vertex-grip/1",
-  "generated_utc": "2026-10-26T15:23:56+00:00",
-  "order_digest": "10b963a25b7e",
+  "generated_utc": "2026-10-26T17:03:12+00:00",
+  "order_digest": "928e13a8b4fd",
   "parameters": {
     "hand_breadth": 96.0,
     "rake_deg": 18.0,
@@ -42,10 +42,10 @@
     "knurl_angle_deg": 35.0,
     "dual_finger_groove": true,
     "neck_fillet": 6.0,
-    "shell_thick": 1.6,
-    "infill_fraction": 0.2,
-    "nozzle_dia": 0.4,
-    "layer_height": 0.2,
+    "shell_thick": 1.26,
+    "infill_fraction": 0.15,
+    "nozzle_dia": 0.6,
+    "layer_height": 0.3,
     "print_speed": 70.0,
     "max_flow": 11.0,
     "duty_cycle": 0.75
@@ -72,20 +72,29 @@
     "neck_blend": "lofted collar"
   },
   "print_estimate": {
-    "material_volume_mm3": 52962.5,
-    "estimated_mass_g": 67.3,
-    "estimated_hours": 3.34,
-    "effective_density": 0.41,
+    "material_volume_mm3": 42071.8,
+    "estimated_mass_g": 53.4,
+    "estimated_hours": 1.42,
+    "effective_density": 0.325,
+    "density_g_cm3": 1.27,
+    "shell_thick_mm": 1.26,
+    "infill_fraction": 0.15,
+    "machine": {
+      "nozzle_mm": 0.6,
+      "layer_mm": 0.3,
+      "speed_mm_s": 70.0,
+      "max_flow_mm3_s": 11.0
+    },
     "note": "first-order; the slicer is authoritative"
   },
   "balance": {
     "ballast_nuts": 3,
     "ballast_mass_g": 17.2,
-    "assembly_mass_g": 159.5,
-    "cog_overhang_above_hand_mm": 37.2,
-    "cog_height_mm": -13.7,
-    "wrist_moment_nmm": 51.5,
-    "inertia_kgm2": 0.002328
+    "assembly_mass_g": 145.6,
+    "cog_overhang_above_hand_mm": 40.7,
+    "cog_height_mm": -10.3,
+    "wrist_moment_nmm": 48.3,
+    "inertia_kgm2": 0.002253
   },
   "structure": {
     "neck": {
@@ -139,8 +148,7 @@
   "warnings": [
     "Launcher interface geometry is UNVERIFIED placeholder data. Measure a physical launcher, populate interface.RAIL_MEASURED and set RAIL_VERIFIED=True before cutting a saleable part.",
     "Launcher mass and balance point are estimates; the balance figures below are directional only.",
-    "right_-Y: deboss draft limited to 25 deg (requested 45 deg) -- a larger angle merges the glyphs of 'VERTEX-01' at the mouth",
-    "estimated print time 3.34 h exceeds the 3 h target"
+    "right_-Y: deboss draft limited to 25 deg (requested 45 deg) -- a larger angle merges the glyphs of 'VERTEX-01' at the mouth"
   ],
   "export": {
     "stl_chord_tolerance_mm": 0.02,

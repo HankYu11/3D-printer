@@ -117,51 +117,62 @@ None of that remainder is support work:
 **0 % support confirmed.** This check found a real architecture bug on the way
 through — see `04`, "The flat cheek has to actually be flat".
 
-## DFM verdict: the mass and time gates conflict
+## DFM verdict and the profile that was chosen
 
-| | Target | At 4 perim / 20 % infill, 0.4 mm @ 0.2 mm, 70 mm/s |
-|---|---|---|
-| Mass @ 1.24 g/cm³ | 45–52 g | **65.7 g** |
-| Print time | < 75 min | **200 min** |
-
-Geometry and slicer settings are independent levers, so the exported files do
-not change — only the profile does:
-
-| Profile | Material | Mass @1.24 | 0.4/0.2 | 0.6/0.3 |
-|---|---|---|---|---|
-| 4 perim / 20 % | 52 963 mm³ | 65.7 g | 200 min | 107 min |
-| 3 perim / 20 % | 46 188 mm³ | 57.3 g | 175 min | 93 min |
-| **3 perim / 15 %** | 40 992 mm³ | **50.8 g** ✓ | 155 min | 83 min |
-| **2 perim / 20 %** | 39 414 mm³ | **48.9 g** ✓ | 149 min | 80 min |
-| 2 perim / 15 % | 33 794 mm³ | 41.9 g | 128 min | **68 min** ✓ |
-
-**No profile satisfies both gates at once**, and on a 0.4 mm nozzle the time
-gate is not reachable at all. The arithmetic is short:
+The brief's two gates — 45–52 g at 1.24 g/cm³, under 75 min — cannot both be
+met on a 0.4 mm nozzle at 60–80 mm/s, for any infill and any geometry:
 
 - The lightest in-window part (45 g at 1.24) is 36 290 mm³ of extrudate.
 - Laying that down in 75 min needs **8.06 mm³/s sustained**.
 - 0.4 mm @ 0.20 mm, 70 mm/s → 4.41 mm³/s — **short**.
 - 0.4 mm @ 0.30 mm, 70 mm/s → 6.62 mm³/s — **short**.
-- 0.6 mm @ 0.30 mm, 70 mm/s → 8.25 mm³/s — **OK**.
+- 0.6 mm @ 0.30 mm, 70 mm/s → 8.25 mm³/s — **reaches it**.
 
-So a 45 g part cannot print in 75 minutes on a 0.4 mm nozzle at 60–80 mm/s, at
-any infill, for any geometry. The gate needs a 0.6 mm nozzle.
+Geometry and slicer settings are independent levers, so the exported files do
+not change with any row below — only the profile does.
 
-The gates are also sized for roughly the *stock* VERTEX-1, not this enlarged
-body. The 95 × 32 mm brief adds about 23 % volume over the 90 × 30 mm standard.
+**Quote shell thickness in millimetres, never in perimeter count.** A perimeter
+is a nozzle-width wide, so "3 perimeters" means 1.26 mm on a 0.4 mm nozzle and
+1.89 mm on a 0.6 mm one. Mixing the two is how an earlier version of this table
+recommended a 50.8 g / 83 min profile that would actually have printed at
+66.2 g / 108 min.
 
-**Recommended resolution**, in order:
+| Nozzle / layer | Perims | Shell | Material | Mass @1.24 | Time @70 mm/s |
+|---|---|---|---|---|---|
+| 0.4 / 0.20 | 4 | 1.68 mm | 54 317 mm³ | 67.4 g | 205 min |
+| 0.4 / 0.20 | 3 | 1.26 mm | 42 072 mm³ | 52.2 g | 159 min |
+| 0.4 / 0.20 | 2 | 0.84 mm | 40 091 mm³ | 49.7 g | 152 min |
+| 0.6 / 0.30 | 4 | 2.52 mm | 64 745 mm³ | 80.3 g | 131 min |
+| 0.6 / 0.30 | 3 | 1.89 mm | 53 408 mm³ | 66.2 g | 108 min |
+| **0.6 / 0.30** | **2** | **1.26 mm** | **42 072 mm³** | **52.2 g** | **85 min** |
 
-1. **0.6 mm nozzle @ 0.3 mm, 3 perimeters / 15 % infill** — 50.8 g, 83 min.
-   Misses 75 min by 8, hits the mass window, keeps a sound shell. Closest
-   honest fit to the brief.
-2. **Accept ~105 min** on the library's 0.4 mm nozzle at 4 perimeters / 15 %.
-3. **Drop to the 30 mm standard body** if both gates are hard requirements; at
-   3 perim / 15 % on a 0.6 mm nozzle it lands near 45 g and 73 min.
+(20 % infill rows omitted except the top one; 15 % elsewhere.)
 
-Dropping to 2 perimeters is what the table says fits, and it is not
-recommended: the shell is the structure in this part, and the dovetail wall's
-safety factor assumes solid material.
+### Chosen profile
+
+**0.6 mm nozzle, 0.30 mm layer, 2 perimeters (1.26 mm shell), 15 % gyroid,
+70 mm/s** — 52.2 g at 1.24 g/cm³ (53.4 g in PETG at 1.27), ~85 min.
+
+Mass lands 0.2 g over the window's top and time about 10 min over the target,
+both accepted. Note that 2 perimeters at 0.6 mm is **the same 1.26 mm of shell**
+as 3 perimeters at 0.4 mm — the wall is not being thinned to buy the time, only
+laid down in fewer, fatter passes.
+
+### Time is sensitive to the hotend, not the motion system
+
+At 0.6 mm and 0.30 mm the nozzle is *asked* for 0.63 × 0.30 × 70 = 13.2 mm³/s,
+which is above what most stock hotends sustain in PETG. The flow ceiling is
+what sets the time, so the estimate moves a lot with the machine:
+
+| Hotend sustained flow | Time |
+|---|---|
+| 8 mm³/s (stock bed-slinger) | 117 min |
+| 9 mm³/s | 104 min |
+| **11 mm³/s (assumed)** | **85 min** |
+| 13.2 mm³/s (high-flow, no ceiling) | 71 min |
+
+The 85 min figure assumes 11 mm³/s. On a stock library printer budget closer to
+**105–120 min**, and slow the print speed rather than let the extruder skip.
 
 ## Files
 

@@ -144,6 +144,11 @@ def manifest(p: Params, part: cq.Workplane, report: dict) -> dict:
             "estimated_mass_g": round(est.mass, 1),
             "estimated_hours": round(est.hours, 2),
             "effective_density": round(est.effective_density, 3),
+            "density_g_cm3": p.density,
+            "shell_thick_mm": p.shell_thick,
+            "infill_fraction": p.infill_fraction,
+            "machine": {"nozzle_mm": p.nozzle_dia, "layer_mm": p.layer_height,
+                        "speed_mm_s": p.print_speed, "max_flow_mm3_s": p.max_flow},
             "note": "first-order; the slicer is authoritative",
         },
         "balance": {
