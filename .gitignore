@@ -2,6 +2,8 @@
 #   cd cad && python -m vertex.build --preset ../presets/adult_mid.json --out ../out
 # STEP files for this part run to ~20 MB; they do not belong in git.
 out/*.step
+cad/vertex/export/*.step
+cad/vertex/export/*.stl
 out/*.stl
 out/*.svg
 out/*.3mf

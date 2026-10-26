@@ -8,12 +8,12 @@ As-built reference unit (hand breadth 90 mm, rake 18°, knurl, 3 nuts):
 | | |
 |---|---|
 | Solid volume | 104 955 mm³ |
-| Bounding box | 81.4 × 30.7 × 100.3 mm |
-| Estimated printed mass, PETG | **54.4 g** (envelope 40–75 g) |
-| Estimated print time | **1.08 h** (target < 3 h) |
+| Bounding box | 81.4 × 30.0 × 100.3 mm |
+| Estimated printed mass, PETG | **54.7 g** (envelope 40–75 g) |
+| Estimated print time | **1.45 h** (target < 3 h) |
 | Grip circumference | 132.7 mm |
 | Assembly mass with launcher | 146.6 g |
-| Generator runtime | ~24 s |
+| Generator runtime | ~25 s |
 
 ---
 
@@ -78,7 +78,10 @@ This one decision pays three ways at once, which is why it is the backbone of
 the design rather than a detail:
 
 1. Flat parallel cheeks mean the part lies on a cheek and prints **support-free**
-   — the walls stay vertical all the way up (`04`).
+   — the walls stay vertical all the way up (`04`). This only holds if the
+   cheeks are genuinely coplanar: the profile table's lateral scale is pinned
+   to 1.0 at every station and asserted at import, because an earlier revision
+   varied it and silently destroyed the flat bed face (`04`).
 2. That same orientation puts the structural load path **in-plane** instead of
    across layer bonds (`04`).
 3. The flat cheek becomes the **customisation canvas** (1.8).
@@ -167,8 +170,8 @@ dimension a layperson can self-measure accurately with a ruler and a phone.
 | Corner radius | 9.0 mm | 9.5 mm | 10.0 mm | `9 + 0.05·Δ` |
 | Finger pitch | 16.4 mm | 18.4 mm | 20.5 mm | `0.205 × breadth` |
 | Grip length | 81.6 mm | 89.8 mm | 98.0 mm | `4·pitch + 16` |
-| Printed mass | 46.3 g | 53.1 g | 60.5 g | measured |
-| Print time | 0.92 h | 1.06 h | 1.20 h | estimated |
+| Printed mass | 46.4 g | 53.3 g | 60.7 g | measured |
+| Print time | 1.23 h | 1.41 h | 1.61 h | estimated |
 
 The 124.5–140.8 mm girth band brackets a Glock 19 (127 mm) at the small end and
 a full-size 1911 (~142 mm) at the large end — the span pistol-grip ergonomics
@@ -187,17 +190,24 @@ below. Taking a deliberately pessimistic 120 N:
 | Feature | Stress | SF (cheek-down) | SF (upright) |
 |---|---|---|---|
 | Neck in bending | 1.27 MPa | **37.1** | 21.3 |
-| **Dovetail shoe wall** | **9.60 MPa** | **4.89** | **2.81** |
+| **Dovetail shoe wall** | **10.64 MPa** | **4.42** | **2.54** |
 
 **The neck is not the limiting feature, and this was worth finding out.** Sizing
 the grip for a human hand has already over-sized it for strength by more than an
 order of magnitude. Design attention spent thickening the neck would be wasted.
 
 What governs is the **shoe side wall**. A 150 N separation force on 22.9° flanks
-resolves into 177 N splaying each 3.0 mm wall outward, and that wall is the
-thinnest loaded structure in the part — 7.6× more stressed than the neck.
+resolves into 177 N splaying each **2.85 mm** wall outward, and that wall is the
+thinnest loaded structure in the part — 8.4× more stressed than the neck.
 
-It also carries the orientation argument in one number: **4.89 printed
-cheek-down versus 2.81 printed upright**. Same geometry, same material; the
+The wall thickness is *derived from the grip width*, not a constant: the shoe is
+built as wide as the grip, so `(grip_width − boss_width − 2·clearance) / 2`. An
+earlier revision hard-coded 3.0 mm here and reported a safety factor of 4.89;
+the real wall on a 30 mm grip is 2.85 mm and the real factor is 4.42. Widening
+the grip thickens the wall — the Qisi edition's 32 mm body gives a 3.85 mm wall
+and a factor of 8.06.
+
+It also carries the orientation argument in one number: **4.42 printed
+cheek-down versus 2.54 printed upright**. Same geometry, same material; the
 difference is purely whether the load runs along the extrusions or across the
 layer bonds. `04` covers why.

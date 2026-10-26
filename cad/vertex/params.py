@@ -45,10 +45,10 @@ FINGER_PITCH_RATIO = 0.205      # finger-to-finger spacing / hand breadth
 
 
 Texture = Literal["knurl", "ribs", "none"]
-Material = Literal["PETG", "ABS", "ASA", "PA6-CF"]
+Material = Literal["PETG", "ABS", "ASA", "PA6-CF", "PLA"]
 
 # Filament density, g/cm^3.
-DENSITY = {"PETG": 1.27, "ABS": 1.04, "ASA": 1.07, "PA6-CF": 1.16}
+DENSITY = {"PETG": 1.27, "ABS": 1.04, "ASA": 1.07, "PA6-CF": 1.16, "PLA": 1.24}
 
 
 @dataclass
@@ -62,6 +62,12 @@ class Params:
 
     player_id: str = ""
     """Debossed on both cheek panels. <= 10 chars. Empty disables."""
+
+    player_id_left: str = ""
+    """Overrides player_id on the +Y cheek only. Empty = use player_id."""
+
+    player_id_right: str = ""
+    """Overrides player_id on the -Y cheek only. Empty = use player_id."""
 
     texture: Texture = "knurl"
     handed: Literal["right", "left", "ambi"] = "ambi"
@@ -114,15 +120,51 @@ class Params:
     text_size: float = 8.0
     text_font: str = "DejaVu Sans"
 
+    text_draft_deg: float = 0.0
+    """Draft on the deboss walls: mouth wider than floor, mould-release
+    sense. AUTO-LIMITED per face -- see grip.safe_draft(). A draft of D on a
+    pocket of depth d widens every glyph by d*tan(D) PER SIDE at the mouth,
+    so a 45 deg draft on a 0.8 mm pocket closes 1.6 mm of gap between
+    neighbouring letters. Short tags survive that; longer ones merge into a
+    blob. The generator measures each string and backs the angle off rather
+    than shipping unreadable branding."""
+
+    text_draft_step: float = 0.2
+    """Draft is cut as a staircase at this pitch. Set it to the layer
+    height: the printer quantises the wall at the layer height anyway, so a
+    staircase at that pitch and a true cone slice to identical G-code."""
+
     # Texture
     knurl_pitch: float = 4.2
     knurl_depth: float = 0.75
     knurl_angle_deg: float = 35.0
 
+    dual_finger_groove: bool = False
+    """Merge the index and middle registers into one wide shallow dish.
+
+    Two fingers sharing a single large-radius scallop brace against each
+    other, which stabilises roll better than two separate grooves -- at the
+    cost of locating each finger less precisely."""
+
     # Structural
     neck_fillet: float = 6.0
     shell_thick: float = 1.6        # 4 perimeters at 0.4 mm
     infill_fraction: float = 0.15
+
+    # Machine profile -- drives the print-time estimate from first
+    # principles rather than one magic throughput number, because the
+    # answer differs by ~3x between a modern CoreXY and a library printer.
+    # Default is a modern CoreXY, which is the machine the 3 h product
+    # envelope was written against: 0.4 mm at 0.2 mm and 200 mm/s wants
+    # 16.8 mm^3/s, so the hotend's flow ceiling binds, not the motion
+    # system. A slower machine is a preset override, not a new default --
+    # the library-printer profile in presets/qisi_edition.json sets
+    # print_speed to 70 and lands roughly 2x longer.
+    nozzle_dia: float = 0.4
+    layer_height: float = 0.2
+    print_speed: float = 200.0      # mm/s, average perimeter+infill
+    max_flow: float = 11.0          # mm^3/s hotend ceiling
+    duty_cycle: float = 0.75        # travel, acceleration, layer changes
 
     # ---------------- DERIVED ----------------
     @property
@@ -171,6 +213,11 @@ class Params:
     def density(self) -> float:
         return DENSITY[self.material]
 
+    def tag_for(self, side: int) -> str:
+        """Tag for a cheek. side > 0 is the +Y (left) face."""
+        override = self.player_id_left if side > 0 else self.player_id_right
+        return (override or self.player_id).strip()
+
     # ---------------- VALIDATION ----------------
     def validate(self) -> list[str]:
         """Return a list of problems. Empty list means the order is buildable."""
@@ -182,10 +229,15 @@ class Params:
             )
         if not 10.0 <= self.rake_deg <= 32.0:
             p.append(f"rake_deg {self.rake_deg} outside validated range 10-32 deg")
-        if len(self.player_id) > 10:
-            p.append(f"player_id '{self.player_id}' exceeds 10 characters")
-        if not self.player_id.replace(" ", "").replace("-", "").isalnum() and self.player_id:
-            p.append("player_id must be alphanumeric plus space and hyphen")
+        for field, tag in (("player_id", self.player_id),
+                           ("player_id_left", self.player_id_left),
+                           ("player_id_right", self.player_id_right)):
+            if len(tag) > 10:
+                p.append(f"{field} '{tag}' exceeds 10 characters")
+            if tag and not tag.replace(" ", "").replace("-", "").isalnum():
+                p.append(f"{field} must be alphanumeric plus space and hyphen")
+        if not 0.0 <= self.text_draft_deg <= 60.0:
+            p.append(f"text_draft_deg {self.text_draft_deg} outside 0-60")
         if not 0 <= self.ballast_nuts <= 6:
             p.append(f"ballast_nuts {self.ballast_nuts} outside 0-6")
         # Wall check. The hex socket presents its across-FLATS dimension

@@ -56,7 +56,8 @@ def build(p: Params) -> tuple[cq.Workplane, dict]:
             "Launcher mass and balance point are estimates; the balance "
             "figures below are directional only.")
 
-    grip_local = G.build_grip_local(p, NECK_OVERLAP)
+    grip_local, branding = G.build_grip_local(p, NECK_OVERLAP)
+    report["branding"] = branding
     grip = G.place(grip_local, p, shoe.underside_z)
 
     collar = G.blend_collar(p, shoe.underside_z, shoe.length)
@@ -93,9 +94,16 @@ def manifest(p: Params, part: cq.Workplane, report: dict) -> dict:
     est = analysis.estimate_print(p, volume, area)
     bal = analysis.balance(p, est.mass, (com.x, com.y, com.z))
     neck = analysis.neck_bending(p)
-    wall = analysis.dovetail_wall()
+    wall = analysis.dovetail_wall(p.grip_width, IF.FIT_CLEARANCE_DEFAULT)
 
     warnings = list(report["warnings"])
+    for face, info in report.get("branding", {}).items():
+        if info["draft_deg_applied"] < info["draft_deg_requested"]:
+            warnings.append(
+                f"{face}: deboss draft limited to "
+                f"{info['draft_deg_applied']:.0f} deg (requested "
+                f"{info['draft_deg_requested']:.0f} deg) -- a larger angle "
+                f"merges the glyphs of '{info['tag']}' at the mouth")
     if not 40.0 <= est.mass <= 75.0:
         warnings.append(
             f"estimated mass {est.mass:.1f} g is outside the 40-75 g product "
@@ -152,6 +160,7 @@ def manifest(p: Params, part: cq.Workplane, report: dict) -> dict:
             "dovetail_wall": {k: round(v, 3) for k, v in wall.items()},
             "governing_feature": "dovetail_wall",
         },
+        "branding": report.get("branding", {}),
         "interface": {
             "provenance": report["interface_provenance"],
             "rail": IF.rail(),
@@ -174,6 +183,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--texture", choices=("knurl", "ribs", "none"))
     ap.add_argument("--nuts", type=int, help="override ballast_nuts")
     ap.add_argument("--no-stl", action="store_true")
+    ap.add_argument("--exact-name", action="store_true",
+                    help="do not append the _PROTOTYPE suffix. The stamp is a "
+                         "safety marker for unverified interface geometry, so "
+                         "dropping it has to be deliberate; the banner and the "
+                         "manifest warning are unaffected.")
+    ap.add_argument("--stl-tolerance", type=float, default=0.01,
+                    help="STL chord (linear deflection) tolerance in mm")
     args = ap.parse_args(argv)
 
     p = Params.from_json(args.preset) if args.preset else Params()
@@ -196,16 +212,18 @@ def main(argv: list[str] | None = None) -> int:
     print(f"built in {time.time() - t0:.1f}s")
 
     man = manifest(p, part, report)
+    man["export"] = {"stl_chord_tolerance_mm": args.stl_tolerance,
+                     "prototype_stamp": not args.exact_name}
     os.makedirs(args.out, exist_ok=True)
     base = args.name or f"vertex1_h{p.hand_breadth:.0f}_r{p.rake_deg:.0f}"
-    if IF.provenance() != "VERIFIED":
+    if IF.provenance() != "VERIFIED" and not args.exact_name:
         base += "_PROTOTYPE"
     stem_path = os.path.join(args.out, base)
 
     exporters.export(part, stem_path + ".step")
     if not args.no_stl:
         exporters.export(part, stem_path + ".stl",
-                         tolerance=0.01, angularTolerance=0.1)
+                         tolerance=args.stl_tolerance, angularTolerance=0.1)
     with open(stem_path + ".json", "w") as fh:
         json.dump(man, fh, indent=2)
 
@@ -218,8 +236,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  assembly {b['assembly_mass_g']:.1f} g, CoG overhang "
           f"{b['cog_overhang_above_hand_mm']:.1f} mm above hand "
           f"({b['ballast_nuts']} nuts)")
+    for face, info in man["branding"].items():
+        print(f"  {face}: '{info['tag']}' {info['size_mm']}mm, "
+              f"draft {info['draft_deg_applied']:.0f}deg "
+              f"(asked {info['draft_deg_requested']:.0f})")
     print(f"  dovetail wall SF {man['structure']['dovetail_wall']['margin_cheek_down']:.2f} "
-          f"cheek-down vs {man['structure']['dovetail_wall']['margin_upright']:.2f} upright")
+          f"cheek-down vs {man['structure']['dovetail_wall']['margin_upright']:.2f} upright "
+          f"(wall {man['structure']['dovetail_wall']['wall_thickness_mm']:.2f}mm)")
     for w in man["warnings"]:
         print(f"  WARNING: {w}")
     print(f"  -> {stem_path}.{{step,stl,json}}")

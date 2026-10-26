@@ -35,12 +35,12 @@ estimated by hand:
 
 | | | | |
 |---|---|---|---|
-| Printed mass (PETG) | **54.4 g** | Grip circumference | 132.7 mm |
-| Print time | **1.08 h** | Bounding box | 81.4 × 30.7 × 100.3 mm |
-| Build height cheek-down | 30.7 mm (154 layers) | Support material | **none** |
-| Dovetail wall SF | **4.89** cheek-down / 2.81 upright | Generator runtime | ~24 s |
+| Printed mass (PETG) | **54.7 g** | Grip circumference | 132.7 mm |
+| Print time | **1.45 h** | Bounding box | 81.4 × 30.0 × 100.3 mm |
+| Build height cheek-down | 30.0 mm (150 layers) | Support material | **none** |
+| Dovetail wall SF | **4.42** cheek-down / 2.54 upright | Generator runtime | ~25 s |
 
-Envelope held across the whole 80–100 mm fit range: 46.3–60.5 g, 0.92–1.20 h.
+Envelope held across the whole 80–100 mm fit range: 46.4–60.7 g, 1.23–1.61 h.
 
 ## Quick start
 
@@ -52,6 +52,10 @@ python -m vertex.build --preset ../presets/adult_mid.json --out ../out
 python -m vertex.build --hand 96 --rake 14 --id "RYU-01" --nuts 4 --out ../out
 python -m vertex.validate            # envelope sweep / regression test
 python -m calibration.rail_gauge     # interface fit coupon -- print this first
+
+# branded edition: per-face debossing, auto-limited draft, 32 mm body
+python -m vertex.build --preset ../presets/qisi_edition.json \
+       --out vertex/export --name grip_qisi_edition --exact-name --stl-tolerance 0.02
 ```
 
 Each build emits `.step` (manufacturing record), `.stl` (slicer) and a `.json`
@@ -68,6 +72,7 @@ interface provenance and warnings.
 | [04 — DFM and Print Spec](docs/04-dfm-and-print-spec.md) | the orientation decision and everything downstream |
 | [05 — Parametric Strategy](docs/05-parametric-strategy.md) | code-to-CAD bridge, injection points, library traps |
 | [06 — On-Demand Pipeline](docs/06-ondemand-pipeline.md) | order to part, and where AI actually helps |
+| [07 — Qisi Tech Edition](docs/07-qisi-edition.md) | a brand build, and where its DFM gates collide |
 
 ## Layout
 
@@ -75,7 +80,7 @@ interface provenance and warnings.
 cad/vertex/        params · interface · grip · build · analysis · validate
 cad/calibration/   rail_gauge.py  -- the fit coupon
 cad/openscad/      dependency-free port (NOT executed -- see 05)
-presets/           teen_small · adult_mid · adult_large
+presets/           teen_small · adult_mid · adult_large · qisi_edition
 docs/              the proposal
 ```
 
@@ -84,7 +89,7 @@ docs/              the proposal
 **Constant 30 mm lateral width; all ergonomic volume in the fore-aft depth.**
 Flat parallel cheeks are correct pistol-grip ergonomics, they let the part print
 support-free lying on a cheek, they put the structural load path *in-plane*
-instead of across layer bonds (4.89 vs 2.81 safety factor), and they give the
+instead of across layer bonds (4.42 vs 2.54 safety factor), and they give the
 customisation panel a free flat canvas. One decision, four payoffs.
 
 **The dovetail is cut last, after every blend.** It is structurally impossible

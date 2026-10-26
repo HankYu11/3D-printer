@@ -30,7 +30,7 @@ STL (slicer) and the manifest.
 **4. Slice.** Fixed profile from `04`. The orientation is fixed by design, so
 there is no per-order slicing judgement to get wrong.
 
-**5. Print.** 154 layers, ~1.1 h, no support, full-cheek bed contact. The squat
+**5. Print.** 150 layers, ~1.5 h, no support, full-cheek bed contact. The squat
 geometry is what makes an unattended farm realistic.
 
 **6. QC.** Fit against the reference launcher; confirm the leaf preloads; weigh
@@ -80,7 +80,7 @@ In order. Nothing below the first line matters until the first line is done.
 1. **Measure the launcher.** `03`. Everything is a prototype until then, and the
    repo says so on every run.
 2. **Calibrate each printer.** Gauge on every machine in the fleet.
-3. **Validate the structural claim.** The dovetail wall safety factor of 4.89 is
+3. **Validate the structural claim.** The dovetail wall safety factor of 4.42 is
    a hand calculation on nominal geometry. Pull-test printed parts to failure and
    confirm the mode is the wall, as predicted. If it fails somewhere else, the
    model is wrong and needs correcting before it is quoted to anyone.

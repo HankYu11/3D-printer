@@ -40,16 +40,38 @@ class Station(NamedTuple):
 # The profile that makes it a grip rather than a stick. Girth peaks under
 # the middle finger, tapers through ring and little finger, then flares at
 # the butt so the hand cannot slide off under a snap load.
+#
+# w_scale IS 1.000 AT EVERY STATION, AND MUST STAY THAT WAY.
+#
+# The cheeks are the bed face. Any station that varies w_scale stops them
+# being coplanar, and then the part no longer rests on a flat face: only
+# the widest band touches the plate and the rest of the cheek floats above
+# it as a large, nearly horizontal, unsupported surface.
+#
+# This was got wrong once. w_scale used to run 0.947-1.013, which on a
+# 32 mm grip is 1.06 mm of variation -- enough that the butt flare alone
+# carried the whole part and 22 % of the surface measured as sub-45 deg
+# down-facing. It still printed, which is why it survived review, but the
+# bed contact and the "support-free" claim were both fiction.
+#
+# Shape the butt flare with d_scale instead. Fore-aft is where the flare
+# does its job anyway: it is the backstrap the little finger hooks under.
 PROFILE: list[Station] = [
     Station(0.00, 1.000, 0.780, 0.80,  0.0),   # neck pad, under the shoe
     Station(0.06, 1.000, 0.860, 0.90,  0.6),   # tang zone
     Station(0.20, 1.000, 0.970, 1.00,  1.2),   # index register
     Station(0.40, 1.000, 1.000, 1.00,  1.0),   # middle finger - palm swell
     Station(0.62, 1.000, 0.960, 1.00,  0.0),   # ring finger
-    Station(0.82, 0.987, 0.880, 0.95, -1.4),   # little finger
-    Station(0.94, 1.013, 0.900, 0.90, -2.6),   # butt flare
-    Station(1.00, 0.947, 0.840, 0.80, -3.2),   # butt face
+    Station(0.82, 1.000, 0.880, 0.95, -1.4),   # little finger
+    Station(0.94, 1.000, 0.915, 0.90, -2.6),   # butt flare (fore-aft only)
+    Station(1.00, 1.000, 0.840, 0.80, -3.2),   # butt face
 ]
+
+# Guard the invariant the whole print orientation rests on.
+assert all(st.w_scale == 1.0 for st in PROFILE), (
+    "PROFILE w_scale must be 1.0 at every station: non-planar cheeks break "
+    "flat bed contact and the support-free claim. Shape the butt with "
+    "d_scale instead.")
 
 TANG_ZONE = 12.0   # mm of grip above the index finger, reserved for the web
 
@@ -121,18 +143,40 @@ def stem(p: Params, neck_overlap: float) -> cq.Workplane:
 
 
 def finger_registers(p: Params) -> cq.Workplane:
-    """Index scallop plus three finger grooves, cut into the frontstrap.
+    """Finger registers cut into the frontstrap.
 
-    Depths are deliberately shallow. Deep grooves lock a hand into exactly
+    Default: an index scallop plus three grooves, one per remaining finger.
+
+    `dual_finger_groove`: index and middle share one wide, shallow dish
+    instead. Two fingers braced inside a single large-radius scallop
+    support each other against roll, which is the axis a launch pull
+    actually twists about; the trade is that neither finger is located as
+    precisely as its own groove would locate it.
+
+    Depths stay shallow either way. Deep grooves lock a hand into exactly
     one position and fight anyone whose fingers sit a few millimetres off
-    the model; these register the hand without trapping it, which is what
-    turns into launch-to-launch repeatability rather than a hot spot.
+    the model; these register without trapping, which is what becomes
+    launch-to-launch repeatability rather than a hot spot by round six.
     """
     L = p.grip_length
-    specs = [(L - TANG_ZONE - 0.5 * p.finger_pitch,
-              p.index_scallop_r, p.index_scallop_depth)]
-    for k in range(1, 4):
-        specs.append((L - TANG_ZONE - (0.5 + k) * p.finger_pitch,
+    pitch = p.finger_pitch
+    specs: list[tuple[float, float, float]] = []
+
+    if p.dual_finger_groove:
+        # One dish spanning index + middle. For a circular scallop of depth
+        # d subtending a chord of span s, R = ((s/2)^2 + d^2) / 2d.
+        span = 2.0 * pitch
+        depth = p.index_scallop_depth + 0.4
+        radius = ((span / 2) ** 2 + depth ** 2) / (2 * depth)
+        specs.append((L - TANG_ZONE - 1.0 * pitch, radius, depth))
+        rest = (2.5, 3.5)                      # ring, little
+    else:
+        specs.append((L - TANG_ZONE - 0.5 * pitch,
+                      p.index_scallop_r, p.index_scallop_depth))
+        rest = (1.5, 2.5, 3.5)                 # middle, ring, little
+
+    for k in rest:
+        specs.append((L - TANG_ZONE - k * pitch,
                       p.finger_groove_r, p.finger_groove_depth))
 
     solids = []
@@ -167,69 +211,168 @@ def ballast_bay(p: Params) -> cq.Workplane:
     return hexa.union(insert)
 
 
-def cheek_panels(p: Params) -> tuple[cq.Workplane, cq.Workplane | None]:
-    """Recess + debossed Player ID on both cheeks.
+def _text_slab(tag: str, size: float, offset: float, height: float,
+               font: str) -> cq.Workplane:
+    """Glyph outlines offset outward by `offset`, extruded `height` thick.
 
-    The glyphs are mirrored for the far cheek so the tag reads correctly
-    from either side rather than appearing reversed on one of them.
+    Returned with y running 0..height whichever way CadQuery chose to
+    extrude, so callers can stack slabs without caring.
+    """
+    base = cq.Workplane("XZ").text(tag, size, max(height, 0.01),
+                                   combine=False, font=font)
+    if offset > 1e-6:
+        faces = base.faces(cq.selectors.DirectionMinMaxSelector(
+            cq.Vector(0, 1, 0), directionMax=True))
+        base = faces.wires().toPending().offset2D(offset).extrude(height)
+    comp = cq.Compound.makeCompound(base.solids().vals())
+    return cq.Workplane(obj=comp).translate((0, -comp.BoundingBox().ymin, 0))
+
+
+def safe_draft(tag: str, size: float, depth: float, requested: float,
+               font: str) -> float:
+    """Largest draft <= `requested` that keeps every glyph separate.
+
+    A draft of D on a pocket of depth d widens each glyph by d*tan(D) PER
+    SIDE at the mouth, closing 2*d*tan(D) of gap between neighbours. At 45
+    deg on a 0.8 mm pocket that is 1.6 mm -- more than the inter-letter gap
+    of most strings, which fuses the whole tag into one blob at the
+    surface. Measured: "QISI" survives 45 deg, "VERTEX-01" merges at 29 deg
+    and self-intersects by 37 deg.
+
+    So the angle is measured per string rather than trusted: offset the
+    outlines and count the solids. Fewer than we started with means letters
+    have touched, and the angle comes down.
+    """
+    if requested <= 0 or not tag:
+        return 0.0
+    expected = len(cq.Workplane("XZ")
+                   .text(tag, size, 0.6, combine=False, font=font)
+                   .solids().vals())
+    ladder = [requested] + [d for d in (40, 35, 30, 25, 20, 15, 10, 5)
+                            if d < requested]
+    for deg in ladder:
+        offset = depth * math.tan(math.radians(deg))
+        try:
+            got = _text_slab(tag, size, offset, 0.4, font).solids().vals()
+        except Exception:
+            continue
+        if len(got) == expected:
+            return float(deg)
+    return 0.0
+
+
+def drafted_text_cutter(tag: str, size: float, depth: float, draft_deg: float,
+                        step: float, over: float, font: str) -> list:
+    """Deboss cutter, floor at y=0, mouth at y=depth+over, mouth WIDER.
+
+    The draft is cut as a staircase at `step`, not as a true cone. That is
+    not an approximation anyone pays for: the printer quantises the pocket
+    wall at the layer height regardless, so a staircase at the layer pitch
+    and a true cone slice to identical G-code -- and the staircase avoids
+    OCCT's tapered extrusion, which refuses outright on any glyph carrying
+    an inner wire (Q, R, 0, every counter in the alphabet).
+
+    Mouth-wider is also the printable sense in the cheek-down orientation.
+    On the bed-side cheek the glyphs are enclosed voids in the first few
+    layers; a pocket that narrows with height closes itself off gradually,
+    where the reverse would be an undercut.
+    """
+    tan_d = math.tan(math.radians(draft_deg))
+    n = max(1, int(round(depth / step)))
+    h = depth / n
+    solids = []
+    for i in range(n):
+        y0 = i * h
+        slab = _text_slab(tag, size, (y0 + h / 2) * tan_d, h, font)
+        solids.extend(slab.translate((0, y0, 0)).solids().vals())
+    mouth = _text_slab(tag, size, depth * tan_d, over, font)
+    solids.extend(mouth.translate((0, depth, 0)).solids().vals())
+    return solids
+
+
+def _fit_size(tag: str, p: Params) -> float:
+    """Shrink the tag until it fits the panel.
+
+    Customers type whatever they like, so the size is fitted rather than
+    trusted -- an order must never silently produce a tag running off the
+    side of the part.
+    """
+    size = p.text_size
+    for _ in range(10):
+        bb = (cq.Workplane("XZ")
+              .text(tag, size, 0.6, combine=False, font=p.text_font)
+              .val().BoundingBox())
+        if bb.xlen <= p.panel_len - 6 and bb.zlen <= p.panel_width - 6:
+            break
+        size *= 0.88
+    return size
+
+
+def cheek_panels(p: Params) -> tuple[cq.Workplane, cq.Workplane | None, dict]:
+    """Recessed panel plus a debossed tag on each cheek.
+
+    The two faces carry independent tags (`player_id_left` / `_right`,
+    falling back to `player_id`), independently fitted and independently
+    drafted, because a brand mark and a model number are rarely the same
+    length and the draft one of them can take is not the draft the other
+    can.
+
+    Returns (recess, text, report) -- the report carries the size and draft
+    actually achieved per face, so the manifest can state them instead of
+    repeating what was asked for.
     """
     z_mid = p.grip_length * 0.46
     half = p.grip_width / 2
-    over = 2.0                       # cutter overshoot past the surface
+    over = 2.0
+    surface = half - p.panel_recess          # floor of the recessed panel
 
+    # panel_recess = 0 debosses straight into the clean cheek. That also
+    # removes a 26 x 60 mm face sitting 0.8 mm off the plate, which the
+    # bed-side cheek would otherwise have to bridge across -- on the very
+    # surface the branding is read from.
     recess = None
-    for sign in (1, -1):
-        box = (cq.Workplane("XY")
-               .box(p.panel_width, p.panel_recess + over, p.panel_len)
-               .translate((0, sign * (half + over / 2 - p.panel_recess / 2), z_mid)))
-        recess = box if recess is None else recess.union(box)
-
-    text = None
-    tag = p.player_id.strip()
-    if tag:
-        # Workplane("XZ").text() lies in the XZ plane and always extrudes
-        # along -Y, occupying y in [-D, 0] whichever cheek it is destined
-        # for. It is NOT symmetric about y = 0, so the two cheeks need
-        # different translations -- a mirrored sign puts the far copy
-        # entirely outside the part, where it cuts nothing and fails
-        # silently.
-        depth = p.text_depth + over
-        surface = half - p.panel_recess          # floor of the recessed panel
-
-        # The tag runs ALONG the grip axis. text() lays glyphs out on the
-        # plane's X, which here is the 24 mm fore-aft width; a nine
-        # character gamer tag is about 45 mm long and would hang off both
-        # edges. Rotating it into Z puts it down the 56 mm length instead.
-        #
-        # Customers type whatever they like, so the size is auto-fitted to
-        # the panel rather than trusted. An order must never silently
-        # produce a tag running off the side of the part.
-        size = p.text_size
-        for _ in range(8):
-            probe = cq.Workplane("XZ").text(
-                tag, size, depth, combine=False, font=p.text_font)
-            bb = probe.val().BoundingBox()
-            if bb.xlen <= p.panel_len - 6 and bb.zlen <= p.panel_width - 6:
-                break
-            size *= 0.88
-
-        glyphs = []
+    if p.panel_recess > 1e-6:
         for sign in (1, -1):
-            t = cq.Workplane("XZ").text(
-                tag, size, depth, combine=False, font=p.text_font)
-            t = t.rotate((0, 0, 0), (0, 1, 0), 90)    # baseline X -> -Z
-            if sign > 0:
-                # Mirror in X so the tag reads correctly from the +Y side
-                # too: between the two viewpoints it is the X axis that
-                # flips, whichever way the baseline runs.
-                t = t.mirror("YZ")
-                y = surface - p.text_depth + depth    # -> [surface-d, ...]
-            else:
-                y = -(surface - p.text_depth)         # -> [..., -surface+d]
-            glyphs.extend(t.translate((0, y, z_mid)).solids().vals())
-        text = cq.Workplane(obj=cq.Compound.makeCompound(glyphs))
+            box = (cq.Workplane("XY")
+                   .box(p.panel_width, p.panel_recess + over, p.panel_len)
+                   .translate((0, sign * (half + over / 2 - p.panel_recess / 2), z_mid)))
+            recess = box if recess is None else recess.union(box)
 
-    return recess, text
+    glyphs: list = []
+    report: dict = {}
+    for sign, face in ((1, "left_+Y"), (-1, "right_-Y")):
+        tag = p.tag_for(sign)
+        if not tag:
+            continue
+        size = _fit_size(tag, p)
+        draft = safe_draft(tag, size, p.text_depth, p.text_draft_deg, p.text_font)
+        report[face] = {"tag": tag, "size_mm": round(size, 2),
+                        "draft_deg_requested": p.text_draft_deg,
+                        "draft_deg_applied": draft}
+
+        cut = drafted_text_cutter(tag, size, p.text_depth, draft,
+                                  p.text_draft_step, over, p.text_font)
+        wp = cq.Workplane(obj=cq.Compound.makeCompound(cut))
+        # Baseline along the grip axis: text() lays glyphs out on the
+        # plane's X, which here is the 24 mm fore-aft width; a nine
+        # character tag would hang off both edges. Rotating about Y leaves
+        # the floor/mouth stack in Y untouched.
+        wp = wp.rotate((0, 0, 0), (0, 1, 0), 90)
+        if sign > 0:
+            # Between the two viewpoints it is the X axis that flips, so
+            # mirroring in X is what makes the tag read correctly from this
+            # side -- whichever way the baseline runs.
+            wp = wp.mirror("YZ")
+            wp = wp.translate((0, surface - p.text_depth, z_mid))
+        else:
+            # Flip the floor/mouth stack so the mouth still faces outward.
+            wp = wp.mirror("XZ")
+            wp = wp.translate((0, -(surface - p.text_depth), z_mid))
+        glyphs.extend(wp.solids().vals())
+
+    text = (cq.Workplane(obj=cq.Compound.makeCompound(glyphs))
+            if glyphs else None)
+    return recess, text, report
 
 
 def texture(p: Params) -> list[cq.Workplane]:
@@ -290,8 +433,12 @@ def _cut_all(wp: cq.Workplane, cutter: cq.Workplane) -> cq.Workplane:
     return cq.Workplane(obj=wp.val().cut(*solids))
 
 
-def build_grip_local(p: Params, neck_overlap: float) -> cq.Workplane:
+def build_grip_local(p: Params, neck_overlap: float) -> tuple[cq.Workplane, dict]:
     """Assemble every local-frame feature into the finished grip stem.
+
+    Returns (solid, branding_report); the report carries the tag size and
+    draft angle actually achieved on each cheek, which is not always what
+    was asked for -- see safe_draft().
 
     Every boolean passes clean=False. CadQuery cleans by default, and
     clean() merges coplanar faces -- on a solid carrying this many lofted
@@ -307,11 +454,12 @@ def build_grip_local(p: Params, neck_overlap: float) -> cq.Workplane:
     g = _cut_all(g, finger_registers(p))
     g = g.cut(ballast_bay(p), clean=False)
 
-    recess, text = cheek_panels(p)
-    g = g.cut(recess, clean=False)
+    recess, text, report = cheek_panels(p)
+    if recess is not None:
+        g = g.cut(recess, clean=False)
     if text is not None:
         g = _cut_all(g, text)
-    return g
+    return g, report
 
 
 def blend_collar(p: Params, neck_z: float, shoe_length: float,

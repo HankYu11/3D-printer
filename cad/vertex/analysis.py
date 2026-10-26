@@ -63,26 +63,38 @@ class PrintEstimate:
 
 
 def estimate_print(p: Params, solid_volume: float, surface_area: float,
-                   throughput_mm3_s: float = 11.0) -> PrintEstimate:
+                   density_override: float | None = None) -> PrintEstimate:
     """First-order shelled-part material and time estimate.
 
     Models the part as a shell of `p.shell_thick` over its whole surface
-    with `p.infill_fraction` inside. `throughput_mm3_s` is the *effective*
-    volumetric rate including travel, acceleration and the slower outer
-    perimeter -- about 11 mm^3/s for PETG on a modern CoreXY at 0.2 mm, well
-    below the headline flow figure.
+    with `p.infill_fraction` inside.
 
-    The slicer is authoritative. This exists to catch an order that would
-    blow the 75 g / 3 h envelope before it reaches a printer.
+    Time comes from the machine profile rather than one magic throughput
+    figure, because the honest answer differs by about 3x across machines
+    that all print this file. A 0.4 mm nozzle at 0.2 mm and 70 mm/s lays
+    down 0.42 x 0.2 x 70 = 5.9 mm^3/s before any overhead; a 0.6 mm nozzle
+    at 0.3 mm moves 13.2 mm^3/s and runs into the hotend's flow ceiling
+    instead. Quoting a single number hides exactly the decision a user
+    making this on a library printer needs to make.
+
+    The slicer is still authoritative. This exists to reject an impossible
+    order before it ties up a printer for two hours.
     """
     shell = min(surface_area * p.shell_thick, solid_volume)
     interior = max(solid_volume - shell, 0.0)
     material = shell + interior * p.infill_fraction
+
+    density = density_override if density_override is not None else p.density
+
+    line_width = p.nozzle_dia * 1.05
+    deposition = line_width * p.layer_height * p.print_speed
+    effective = min(deposition, p.max_flow) * p.duty_cycle
+
     return PrintEstimate(
         solid_volume=solid_volume,
         material_volume=material,
-        mass=material * p.density / 1000.0,
-        hours=material / throughput_mm3_s / 3600.0,
+        mass=material * density / 1000.0,
+        hours=material / effective / 3600.0,
         effective_density=material / solid_volume if solid_volume else 0.0,
     )
 
@@ -234,7 +246,9 @@ def neck_bending(p: Params, pull_force_n: float = 120.0,
     }
 
 
-def dovetail_wall(separation_force_n: float = 150.0) -> dict[str, float]:
+def dovetail_wall(grip_width: float = 30.0,
+                  fit_clearance: float = 0.15,
+                  separation_force_n: float = 150.0) -> dict[str, float]:
     """Splay of the shoe side wall -- the feature that actually governs.
 
     A vertical separation force tries to pull the launcher boss out of the
@@ -251,6 +265,11 @@ def dovetail_wall(separation_force_n: float = 150.0) -> dict[str, float]:
     and each wall is then a cantilever off the pocket floor, loaded at
     mid-height.
 
+    The wall is derived from `grip_width`, not read from RAIL_NOMINAL: the
+    shoe is built as wide as the grip, so widening the grip thickens the
+    wall and the safety factor moves with it. A hard-coded wall figure
+    would silently under-report a 32 mm part and over-report a 28 mm one.
+
     Printed cheek-down the wall's bending stress runs along Z, inside the
     layer plane, so the allowable is the in-plane figure. Printed upright
     the same stress crosses every layer bond and the allowable drops to the
@@ -261,15 +280,16 @@ def dovetail_wall(separation_force_n: float = 150.0) -> dict[str, float]:
     half_delta = (r["boss_width_bottom"] - r["boss_width_top"]) / 2
     theta = math.atan2(half_delta, r["boss_height"])
 
+    wall = (grip_width - r["boss_width_bottom"] - 2 * fit_clearance) / 2
+
     splay = (separation_force_n / 2) / math.tan(theta)
     moment = splay * r["boss_height"] / 2
-    z_mod = r["slide_length"] * r["wall"] ** 2 / 6
+    z_mod = r["slide_length"] * wall ** 2 / 6
     stress = moment / z_mod
-
-    area = r["slide_length"] * r["wall"]
-    shear = 1.5 * splay / area
+    shear = 1.5 * splay / (r["slide_length"] * wall)
 
     return {
+        "wall_thickness_mm": wall,
         "flank_angle_deg": math.degrees(theta),
         "splay_force_n": splay,
         "moment_nmm": moment,

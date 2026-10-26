@@ -90,11 +90,17 @@ PROFILE = [
     Station(0.20, 1.000, 0.970, 1.00,  1.2),   # index register
     Station(0.40, 1.000, 1.000, 1.00,  1.0),   # middle -- palm swell
     Station(0.62, 1.000, 0.960, 1.00,  0.0),   # ring
-    Station(0.82, 0.987, 0.880, 0.95, -1.4),   # little
-    Station(0.94, 1.013, 0.900, 0.90, -2.6),   # butt flare
-    Station(1.00, 0.947, 0.840, 0.80, -3.2),   # butt face
+    Station(0.82, 1.000, 0.880, 0.95, -1.4),   # little
+    Station(0.94, 1.000, 0.915, 0.90, -2.6),   # butt flare (fore-aft only)
+    Station(1.00, 1.000, 0.840, 0.80, -3.2),   # butt face
 ]
 ```
+
+The second column — lateral scale — **is 1.000 at every station and is asserted
+at import**. It is the one entry in this table that is not a styling choice: the
+cheeks are the bed face, and a station that varies it stops them being coplanar.
+That invariant was broken once and cost the flat bed contact the whole print
+orientation depends on (`04`).
 
 Fractions, not millimetres, so the whole family scales from one table. An
 ergonomics change is a table edit, reviewable as a diff. Interpolating the same

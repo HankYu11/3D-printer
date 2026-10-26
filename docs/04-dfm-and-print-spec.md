@@ -32,7 +32,7 @@ Quantified, from `analysis.dovetail_wall()` on the governing feature:
 
 | | cheek-down | upright |
 |---|---|---|
-| Dovetail wall safety factor | **4.89** | 2.81 |
+| Dovetail wall safety factor | **4.42** | 2.54 |
 
 Same geometry, same material, same load. A 1.74× strength difference, free.
 
@@ -53,13 +53,38 @@ The result is a **squat** print:
 | | |
 |---|---|
 | Footprint | 81.4 × 100.3 mm |
-| Build height | **30.7 mm** |
-| Layers at 0.2 mm | **154** |
-| Bed contact | full flat cheek |
+| Build height | **30.0 mm** |
+| Layers at 0.2 mm | **150** |
+| Bed contact | full flat cheek, 3 024 mm² measured |
 | Support material | **none** |
 
-A 154-layer print cannot topple, has no tall-thin resonance, needs no brim, and
+A 150-layer print cannot topple, has no tall-thin resonance, needs no brim, and
 the bed-side cheek comes off a smooth plate with a near-moulded finish.
+
+### The flat cheek has to actually be flat
+
+This was got wrong. The profile table originally varied its lateral scale over
+the last three stations — 0.947 to 1.013, which on a 32 mm grip is 1.06 mm of
+variation. The cheek was therefore not a plane but a very shallow barrel, and
+printed cheek-down only the butt-flare band touched the plate: **117 mm² of bed
+contact instead of 3 024 mm²**, with the whole main cheek floating 0.2 mm above
+it as a large near-horizontal unsupported face. Measured on the mesh, 22.2 % of
+the surface came back as sub-45° down-facing.
+
+It still printed, which is exactly why it survived review — but the bed contact
+and the support-free claim were both fiction. The lateral scale is now pinned to
+1.0 at every station and asserted at import; the butt flare is shaped in
+fore-aft depth instead, which is where it does its job anyway. Flagged area
+dropped to 8.6 %, and what is left is not support:
+
+| Remaining sub-45° area | What it is |
+|---|---|
+| ~1 270 mm² in the first 3 mm | the convex roll-off of the bottom corner radius — self-supporting, no slicer generates support for it; costs a little elephant-foot, which is the price of a filleted edge instead of a chamfered one |
+| ~540 mm² at mid-height | the ballast socket roof — a **7.7 mm flat bridge by design** |
+| ~19 mm² | the tournament-lock bore roof, a 4.2 mm bridge |
+
+No true unsupported overhang remains. Verify any revision with
+`scratchpad/overhang.py`-style mesh checks rather than by assertion.
 
 ## Support-free by construction
 
@@ -98,7 +123,7 @@ is a safety problem, not a warranty problem.
 
 | Setting | Value | Reason |
 |---|---|---|
-| Layer height | 0.2 mm | 154 layers; 0.16 for finer text |
+| Layer height | 0.2 mm | 150 layers; 0.16 for finer text |
 | Perimeters | **4** (1.6 mm) | shell carries the load; the in-plane path |
 | Top / bottom | 5 / 5 | cheek faces are visible surfaces |
 | Infill | **15 % gyroid** | isotropic; grip is shell-dominated |
@@ -131,19 +156,34 @@ Verified across the full published fit range by `python -m vertex.validate`:
 
 | hand | rake | girth | mass | time | wall SF | status |
 |---|---|---|---|---|---|---|
-| 80 | 20° | 124.5 mm | 46.3 g | 0.92 h | 4.89 | ok |
-| 85 | 19° | 128.6 mm | 49.6 g | 0.99 h | 4.89 | ok |
-| 90 | 18° | 132.7 mm | 53.1 g | 1.06 h | 4.89 | ok |
-| 95 | 17° | 136.8 mm | 56.7 g | 1.13 h | 4.89 | ok |
-| 100 | 16° | 140.8 mm | 60.5 g | 1.20 h | 4.89 | ok |
-| 90 | 10° | 132.7 mm | 53.0 g | 1.05 h | 4.89 | ok |
-| 90 | 32° | 132.7 mm | 53.2 g | 1.06 h | 4.89 | ok |
+| 80 | 20° | 124.5 mm | 46.4 g | 1.23 h | 4.42 | ok |
+| 85 | 19° | 128.6 mm | 49.8 g | 1.32 h | 4.42 | ok |
+| 90 | 18° | 132.7 mm | 53.3 g | 1.41 h | 4.42 | ok |
+| 95 | 17° | 136.8 mm | 56.9 g | 1.51 h | 4.42 | ok |
+| 100 | 16° | 140.8 mm | 60.7 g | 1.61 h | 4.42 | ok |
+| 90 | 10° | 132.7 mm | 53.2 g | 1.41 h | 4.42 | ok |
+| 90 | 32° | 132.7 mm | 53.4 g | 1.41 h | 4.42 | ok |
 
 Envelope 40–75 g and under 3 h, met with margin at both extremes. The
-as-shipped unit with knurl texture is 54.4 g / 1.08 h.
+as-shipped unit with knurl texture is 54.7 g / 1.45 h.
 
 Mass and time are **first-order estimates** — a shell of `shell_thick` over the
-measured surface area plus `infill_fraction` inside, at an effective 11 mm³/s
-including travel and acceleration. They exist to reject an impossible order
-before it ties up a printer. **The slicer is authoritative**, and the manifest
-says so.
+measured surface area plus `infill_fraction` inside. Time now comes from the
+machine profile rather than one magic throughput figure, because the honest
+answer differs by about 3× across machines that all print this same file:
+
+```
+line_width = nozzle × 1.05
+rate       = min(line_width × layer_height × speed, max_flow) × duty_cycle
+```
+
+The default profile is a modern CoreXY — 0.4 mm at 0.2 mm and 200 mm/s, where
+the hotend's 11 mm³/s flow ceiling binds rather than the motion system, giving
+8.25 mm³/s effective. That is the machine the 3 h envelope was written against.
+A slower machine is a preset override: the library-printer profile at 70 mm/s
+manages 4.41 mm³/s and takes roughly twice as long for the same file. Quoting a
+single number would hide exactly the decision a user on a library printer needs
+to make.
+
+They exist to reject an impossible order before it ties up a printer. **The
+slicer is authoritative**, and the manifest says so.
