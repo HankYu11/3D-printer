@@ -47,6 +47,18 @@ session is still useful — measure the three dimensions you are confident in,
 leave the rest, and `provenance()` reports `PARTIAL` rather than claiming
 verification it has not got.
 
+## What the gauge is checking against
+
+![Assumed launcher interface](images/gauge-fit.png)
+
+Both halves of that picture are generated from `RAIL_NOMINAL`, so the left-hand
+panel is the question, not the answer: does the launcher actually carry a rail
+wider at its tip than at its base? If it does not — if the mount is a pair of
+pegs, a narrow tab or a clip — the gauge cannot report anything useful and no
+clearance value will rescue it. That is a `RAIL_MEASURED` problem, not a
+tolerance problem, and it is worth five seconds of holding the coupon up to the
+launcher before test-fitting anything.
+
 ## What to measure
 
 | Key | What it is | How |
