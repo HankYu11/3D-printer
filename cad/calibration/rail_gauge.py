@@ -40,7 +40,8 @@ from cadquery import exporters
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from vertex.interface import build_shoe, provenance, rail   # noqa: E402
+from vertex.interface import (build_shoe, provenance, rail,     # noqa: E402
+                              FIT_CLEARANCE_DEFAULT)
 from vertex.params import Params                            # noqa: E402
 
 STATIONS = [-0.05, 0.00, 0.05, 0.10, 0.15]
@@ -132,16 +133,28 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--width", type=float, default=30.0)
     ap.add_argument("--stations", type=int, default=len(STATIONS),
                     help="how many clearance stations to include (1-5). "
-                         "Fewer is a shorter print; start with 3 and refine.")
+                         "Fewer is a shorter print; 1 prints the clearance "
+                         "the grip itself is built with.")
+    ap.add_argument("--clearance", type=float, default=None,
+                    help="print a single station at exactly this clearance, "
+                         "overriding --stations")
     args = ap.parse_args(argv)
 
-    chosen = STATIONS
-    if args.stations < len(STATIONS):
+    if args.clearance is not None:
+        chosen = [args.clearance]
+    elif args.stations == 1:
+        # One station means a go/no-go, not a sweep -- so print the
+        # clearance the grip will actually be cut with. If it fits, there
+        # is nothing left to calibrate and the grip can follow directly.
+        chosen = [FIT_CLEARANCE_DEFAULT]
+    elif args.stations < len(STATIONS):
         # Keep the ends and spread the rest, so a reduced gauge still
         # brackets the range instead of clustering.
         idx = [round(i * (len(STATIONS) - 1) / (args.stations - 1))
-               for i in range(args.stations)] if args.stations > 1 else [2]
+               for i in range(args.stations)]
         chosen = [STATIONS[i] for i in sorted(set(idx))]
+    else:
+        chosen = list(STATIONS)
 
     print(f"interface provenance: {provenance()}")
     print(f"stations: {', '.join(f'{s:+.2f}' for s in chosen)} mm")
@@ -176,6 +189,26 @@ def main(argv: list[str] | None = None) -> int:
             rate = min(nozzle * 1.05 * layer * speed, 11.0) * duty
             print(f"  {label:<14} {nozzle}mm/{layer}mm @ {speed}mm/s -> "
                   f"{mat / rate / 60:5.0f} min  ({mat * 1.24 / 1000:.0f} g)")
+    # With one station there is no ladder to compare against, so print the
+    # nominal pocket dimensions. Calipers on the printed pocket then
+    # separate the two unknowns this part sits between: how far the
+    # printer missed the model, and how far the model misses the real
+    # launcher. Without that split, a part that does not fit tells you
+    # nothing about which of the two is wrong.
+    if len(chosen) == 1:
+        r = rail()
+        c = chosen[0]
+        print()
+        print(f"SINGLE STATION at {c:+.2f} mm clearance.")
+        print("  Nominal pocket, measure these with calipers:")
+        print(f"    opening (top) width  {r['boss_width_top'] + 2 * c:7.2f} mm")
+        print(f"    floor (bottom) width {r['boss_width_bottom'] + 2 * c:7.2f} mm")
+        print(f"    depth                {r['boss_height'] + c:7.2f} mm")
+        print(f"    engagement length    {r['slide_length']:7.2f} mm")
+        print("  Printed MINUS nominal = your printer's offset on an internal")
+        print("  pocket. Then compare the same numbers against the launcher's")
+        print("  boss: that difference is the model being wrong, which is a")
+        print("  different problem and is fixed in interface.RAIL_MEASURED.")
     print()
     print("PROCEDURE")
     print("  1. Print flat, SAME printer / material / profile as the grip.")
