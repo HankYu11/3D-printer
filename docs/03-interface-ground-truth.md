@@ -2,6 +2,16 @@
 
 ## The problem, stated plainly
 
+> **Update (2026-10-27): the assumption below is now known to be wrong in
+> kind.** Photos of the official grip accessory show a head block marked
+> "LOCK", and the vendor's own demo tells you to push harder to seat it —
+> a snap/clamp engagement. The dovetail modelled here is a slide-on joint.
+> Those are different mechanisms, so this is not a tolerance problem to
+> refine; `build_shoe()` needs replacing once the real mount is measured.
+> The rest of this document still describes how that measurement gets
+> taken and how it flows through the generator.
+
+
 The brief says to treat the launcher's mounting interface as immutable ground
 truth. It is. **But I do not have it.**
 

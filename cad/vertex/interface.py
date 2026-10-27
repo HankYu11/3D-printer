@@ -33,6 +33,20 @@ import cadquery as cq
 # --------------------------------------------------------------------------
 RAIL_VERIFIED = False
 
+# UPDATE, 2026-10-27: this is now known WRONG IN KIND, not merely unmeasured.
+#
+# Photographs of the official Beyblade X grip accessory show a block marked
+# "LOCK" at the handle's head, and the demo caption tells the user to push
+# HARDER to seat it. That is a snap/clamp engagement. The dovetail modelled
+# below is a SLIDE-ON joint: the launcher would enter endwise and wedge.
+# Those are different mechanisms, and no clearance value converts one into
+# the other.
+#
+# So RAIL_NOMINAL is not a starting point to refine. When the real mount is
+# measured, expect to replace build_shoe() outright rather than adjust these
+# numbers. They are retained only so the existing pipeline still runs
+# end to end while the real geometry is pending.
+
 RAIL_NOMINAL = {
     # Male dovetail boss on the launcher, which our shoe swallows.
     "boss_width_bottom": 24.0,   # widest point of the launcher dovetail
