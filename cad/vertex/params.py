@@ -157,14 +157,28 @@ class Params:
     # Default is a modern CoreXY, which is the machine the 3 h product
     # envelope was written against: 0.4 mm at 0.2 mm and 200 mm/s wants
     # 16.8 mm^3/s, so the hotend's flow ceiling binds, not the motion
-    # system. A slower machine is a preset override, not a new default --
-    # the library-printer profile in presets/qisi_edition.json sets
-    # print_speed to 70 and lands roughly 2x longer.
+    # system. A slower machine is a preset override, not a new default.
     nozzle_dia: float = 0.4
     layer_height: float = 0.2
     print_speed: float = 200.0      # mm/s, average perimeter+infill
     max_flow: float = 11.0          # mm^3/s hotend ceiling
-    duty_cycle: float = 0.75        # travel, acceleration, layer changes
+
+    duty_cycle: float = 0.50
+    """Fraction of nominal deposition actually achieved.
+
+    CALIBRATED, not guessed. Cura 0.4 mm / 0.2 mm "Standard Quality",
+    10 % infill, quoted 8.32 m of 1.75 mm filament in 2 h 47 m for the fit
+    gauge: 20 012 mm3 in 167 min = 2.00 mm3/s against a nominal
+    0.42 x 0.2 x 50 = 4.20, so duty = 0.48.
+
+    This was 0.75 before that measurement, which made every estimate in
+    the project optimistic by about 1.6x. The gap is mostly Cura running
+    the OUTER WALL at half the print speed (25 mm/s by default), plus
+    top/bottom at 25 and the initial layer at 20 -- and these parts are
+    shell-dominated, so most of the time is spent in exactly those moves.
+
+    A tuned high-speed profile that does not halve the outer wall will beat
+    this; raise it per preset rather than changing the default back."""
 
     # ---------------- DERIVED ----------------
     @property

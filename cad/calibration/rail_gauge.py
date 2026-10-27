@@ -41,6 +41,7 @@ from cadquery import exporters
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from vertex.interface import build_shoe, provenance, rail   # noqa: E402
+from vertex.params import Params                            # noqa: E402
 
 STATIONS = [-0.05, 0.00, 0.05, 0.10, 0.15]
 GAP = 4.0          # between stations
@@ -164,14 +165,15 @@ def main(argv: list[str] | None = None) -> int:
           f"bbox {bb.xlen:.1f} x {bb.ylen:.1f} x {bb.zlen:.1f} mm")
     print(f"-> {path}.{{step,stl}}")
     print()
-    print("ESTIMATED PRINT TIME (no support needed in this orientation):")
+    duty = Params().duty_cycle      # calibrated; see params.duty_cycle
+    print(f"ESTIMATED PRINT TIME (no support needed; duty {duty:.2f}):")
     for shell, infill, label in ((0.8, 0.15, "2 walls / 15%"),
                                  (1.2, 0.20, "3 walls / 20%")):
         sh = min(area * shell, vol)
         mat = sh + max(vol - sh, 0) * infill
         for nozzle, layer, speed in ((0.4, 0.2, 50), (0.4, 0.2, 60),
                                      (0.6, 0.3, 60)):
-            rate = min(nozzle * 1.05 * layer * speed, 11.0) * 0.75
+            rate = min(nozzle * 1.05 * layer * speed, 11.0) * duty
             print(f"  {label:<14} {nozzle}mm/{layer}mm @ {speed}mm/s -> "
                   f"{mat / rate / 60:5.0f} min  ({mat * 1.24 / 1000:.0f} g)")
     print()

@@ -1,7 +1,7 @@
 {
   "schema": "vertex-grip/1",
-  "generated_utc": "2026-10-26T17:03:12+00:00",
-  "order_digest": "928e13a8b4fd",
+  "generated_utc": "2026-10-27T06:35:47+00:00",
+  "order_digest": "a25495990d7b",
   "parameters": {
     "hand_breadth": 96.0,
     "rake_deg": 18.0,
@@ -44,11 +44,11 @@
     "neck_fillet": 6.0,
     "shell_thick": 1.26,
     "infill_fraction": 0.15,
-    "nozzle_dia": 0.6,
+    "nozzle_dia": 0.4,
     "layer_height": 0.3,
-    "print_speed": 70.0,
+    "print_speed": 60.0,
     "max_flow": 11.0,
-    "duty_cycle": 0.75
+    "duty_cycle": 0.5
   },
   "derived": {
     "grip_circumference_mm": 141.58,
@@ -74,15 +74,15 @@
   "print_estimate": {
     "material_volume_mm3": 42071.8,
     "estimated_mass_g": 53.4,
-    "estimated_hours": 1.42,
+    "estimated_hours": 3.09,
     "effective_density": 0.325,
     "density_g_cm3": 1.27,
     "shell_thick_mm": 1.26,
     "infill_fraction": 0.15,
     "machine": {
-      "nozzle_mm": 0.6,
+      "nozzle_mm": 0.4,
       "layer_mm": 0.3,
-      "speed_mm_s": 70.0,
+      "speed_mm_s": 60.0,
       "max_flow_mm3_s": 11.0
     },
     "note": "first-order; the slicer is authoritative"
@@ -148,7 +148,8 @@
   "warnings": [
     "Launcher interface geometry is UNVERIFIED placeholder data. Measure a physical launcher, populate interface.RAIL_MEASURED and set RAIL_VERIFIED=True before cutting a saleable part.",
     "Launcher mass and balance point are estimates; the balance figures below are directional only.",
-    "right_-Y: deboss draft limited to 25 deg (requested 45 deg) -- a larger angle merges the glyphs of 'VERTEX-01' at the mouth"
+    "right_-Y: deboss draft limited to 25 deg (requested 45 deg) -- a larger angle merges the glyphs of 'VERTEX-01' at the mouth",
+    "estimated print time 3.09 h exceeds the 3 h target"
   ],
   "export": {
     "stl_chord_tolerance_mm": 0.02,
