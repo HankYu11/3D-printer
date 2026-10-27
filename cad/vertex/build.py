@@ -68,7 +68,8 @@ def build(p: Params) -> tuple[cq.Workplane, dict]:
     part = shoe.block.union(grip, clean=False)
     part = part.union(collar, clean=False)
     part = part.union(shelf, clean=False)
-    part = part.union(shoe.leaf, clean=False)
+    if shoe.leaf is not None:
+        part = part.union(shoe.leaf, clean=False)
     part = part.cut(shoe.cutter, clean=False)
     report["neck_blend"] = "lofted collar"
 

@@ -75,10 +75,21 @@ So the pipeline measures it, once per printer/material pairing:
 python -m calibration.rail_gauge --out out/
 ```
 
-Produces a 34 × 174 × 13 mm coupon — five dovetail stations at −0.05, 0.00,
-+0.05, +0.10 and +0.15 mm, each with its clearance debossed on the aft face
-where it stays readable with a launcher sitting in the pocket. Roughly 15
-minutes to print.
+Produces a 34 × 176 × 8.5 mm coupon — five dovetail stations at −0.05, 0.00,
++0.05, +0.10 and +0.15 mm, each with its clearance debossed on the top face in
+the flat margin beside its pocket. Zero support in the as-exported
+orientation (verified on the mesh, not asserted).
+
+`--stations 3` prints a reduced ladder when a full sweep is not needed.
+
+The script prints its own time estimate for several profiles rather than
+quoting one here, because the first version of this document quoted "roughly
+15 minutes" from nobody having run the numbers. It was really 2.5–4 h: the
+gauge repeated the full production shoe five times and so carried *more*
+surface area than the grip itself, and the leaf spring's relief slot was the
+one feature on this project that forces support. It is now stripped to what it
+measures — minimum floor, no leaf, flat-bottomed plate — and runs ~36 min on a
+0.6 mm nozzle at 0.3 mm, ~79 min on 0.4 mm at 0.2 mm.
 
 1. Print flat, on the **same printer, material and profile** as the grip.
 2. Try each station on the launcher, tight to loose.

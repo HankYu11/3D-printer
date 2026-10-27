@@ -104,7 +104,7 @@ class Shoe:
     the mating geometry. The interface cannot be broken from downstream.
     """
     block: cq.Workplane     # solid outer shoe, no pocket yet
-    leaf: cq.Workplane      # additive compliant spring
+    leaf: cq.Workplane | None   # additive compliant spring; None when skipped
     cutter: cq.Workplane    # pocket + lock bore + above-mating-plane trim
     width: float
     length: float
@@ -114,7 +114,9 @@ class Shoe:
 
 def build_shoe(grip_width: float,
                fit_clearance: float = FIT_CLEARANCE_DEFAULT,
-               tournament_lock: bool = True) -> Shoe:
+               tournament_lock: bool = True,
+               leaf: bool = True,
+               floor_override: float | None = None) -> Shoe:
     """Build the interface shoe.
 
     Part frame: origin at the centre of the mating face, +Z toward the
@@ -130,7 +132,8 @@ def build_shoe(grip_width: float,
     c = fit_clearance
 
     depth = r["boss_height"] + c
-    height = depth + r["floor"]
+    floor = r["floor"] if floor_override is None else floor_override
+    height = depth + floor
     length = r["slide_length"] + r["stop_thick"]
     width = grip_width
 
@@ -166,12 +169,16 @@ def build_shoe(grip_width: float,
                      trapezoid(1.0).moved(cq.Location(cq.Vector(0, 0, open_end_x - lead))))
         .loft())
 
-    # Relief that turns the pocket floor into a cantilever root.
-    relief = (cq.Workplane("XY")
-              .box(LEAF_LEN + 2.0, LEAF_WIDTH + 2.0, LEAF_LIFT + 0.6,
-                   centered=(True, True, False))
-              .translate((0, 0, -depth - 0.3)))
-    cutter = pocket.union(relief)
+    # Relief that turns the pocket floor into a cantilever root. Skipped
+    # with leaf=False: the fit gauge does not measure preload, and the
+    # relief is the one feature on this part that forces support.
+    cutter = pocket
+    if leaf:
+        relief = (cq.Workplane("XY")
+                  .box(LEAF_LEN + 2.0, LEAF_WIDTH + 2.0, LEAF_LIFT + 0.6,
+                       centered=(True, True, False))
+                  .translate((0, 0, -depth - 0.3)))
+        cutter = cutter.union(relief)
 
     # Trim anything that tries to rise above the mating plane.
     cutter = cutter.union(
@@ -191,13 +198,17 @@ def build_shoe(grip_width: float,
     # slack whatever the clearance did. Printed on its side (docs/04) the
     # leaf's bending stress runs in-plane, so it flexes for thousands of
     # cycles instead of snapping along a layer boundary.
-    leaf = (cq.Workplane("XY")
-            .box(LEAF_LEN, LEAF_WIDTH, LEAF_THICK, centered=(True, True, False))
-            .translate((0, 0, -depth + LEAF_LIFT)))
-    leaf = leaf.union(
-        cq.Workplane("XY")
-        .box(3.0, LEAF_WIDTH, LEAF_LIFT + 0.9, centered=(True, True, False))
-        .translate((-LEAF_LEN / 2 - 1.5, 0, -depth - 0.3)))
+    if leaf:
+        leaf_solid = (cq.Workplane("XY")
+                      .box(LEAF_LEN, LEAF_WIDTH, LEAF_THICK,
+                           centered=(True, True, False))
+                      .translate((0, 0, -depth + LEAF_LIFT)))
+        leaf_solid = leaf_solid.union(
+            cq.Workplane("XY")
+            .box(3.0, LEAF_WIDTH, LEAF_LIFT + 0.9, centered=(True, True, False))
+            .translate((-LEAF_LEN / 2 - 1.5, 0, -depth - 0.3)))
+    else:
+        leaf_solid = None
 
-    return Shoe(block=block, leaf=leaf, cutter=cutter, width=width,
+    return Shoe(block=block, leaf=leaf_solid, cutter=cutter, width=width,
                 length=length, height=height, underside_z=-height)
